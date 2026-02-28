@@ -16,3 +16,7 @@ knot_name = prime_link_knot_10.get_all_prime_under10()[15]
 pd_code   = prime_link_knot_10.load_pd_code()[knot_name]
 print(knot_name, pd_code)
 ```
+
+## TODO
+
+- add amphicheiral link list.
