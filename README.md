@@ -1,2 +1,18 @@
-# pd_code_for_prime_link_and_knot
-针对小于等于 10 crossing 构建的素扭结以及素链环的 pd_code 列表
+# prime_link_knot_10
+A list of pd_codes for prime knots and prime links constructed for those with ≤ 10 crossings
+
+## Install
+
+```bash
+pip install prime-link-knot-10
+```
+
+## Usage
+
+```python
+import prime_link_knot_10
+
+knot_name = prime_link_knot_10.get_all_prime_under10()[15]
+pd_code   = prime_link_knot_10.load_pd_code()[knot_name]
+print(knot_name, pd_code)
+```
