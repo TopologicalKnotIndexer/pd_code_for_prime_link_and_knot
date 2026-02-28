@@ -9,8 +9,12 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "link-rep"
 ]
-
+include = [
+    {path = "prime_link_knot_10/data", format = "sdist"},
+    {path = "prime_link_knot_10/data", format = "wheel"}
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
