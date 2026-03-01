@@ -44,22 +44,31 @@ def load_pd_code() -> dict[str, list[list[int]]]:
                     ans[lpart] = rpart
     return ans
 
+# 用于获取素扭结排序依据
+@functools.cache
+def get_link_name_sort_index(link_name:str) -> tuple:
+    link_id = LinkId.get_link_id_from_string(link_name)
+    return (
+        link_id.crossing_num,
+        link_id.knot_or_link,
+        link_id.alter_or_nonalter,
+        link_id.inner_index,
+        link_id.mirror,
+    )
+
+# 用于给素扭结序列排序
+def sort_link_name_list(link_name_list: list[str]) -> list[str]:
+    return sorted([
+        link_name
+        for link_name in link_name_list
+    ], key=lambda link_name: get_link_name_sort_index(link_name))
+
 @functools.cache
 def get_all_prime_under10() -> list[str]:
-    def get_sort_tuple(link_name:str) -> tuple:
-        link_id = LinkId.get_link_id_from_string(link_name)
-        return (
-            link_id.crossing_num,
-            link_id.knot_or_link,
-            link_id.alter_or_nonalter,
-            link_id.inner_index,
-            link_id.mirror,
-        )
-
-    return sorted([
+    return sort_link_name_list([
         item
         for item in load_pd_code()
-    ], key=lambda link_name: get_sort_tuple(link_name))
+    ])
 
 def dfs(
     last_pos:int, 
