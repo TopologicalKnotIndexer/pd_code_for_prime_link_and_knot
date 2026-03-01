@@ -1,5 +1,6 @@
 import os
 import functools
+import json
 from link_rep import LinkId
 
 DIRNOW = os.path.dirname(os.path.abspath(__file__))
@@ -60,6 +61,34 @@ def get_all_prime_under10() -> list[str]:
         for item in load_pd_code()
     ], key=lambda link_name: get_sort_tuple(link_name))
 
-if __name__ == "__main__":
-    for line in get_all_prime_under10():
-        print(line)
+def dfs(
+    last_pos:int, 
+    cur_cross:int, 
+    arr:list[str], 
+    sol:list[list[str]], 
+    all_knots:list[str], 
+    total_crossing:int):
+
+    if cur_cross > total_crossing: # 超过限制了
+        return
+    
+    if len(arr) != 0:
+        sol.append(json.loads(json.dumps(arr)))
+    
+    if cur_cross < total_crossing:
+        for i in range(last_pos, len(all_knots)): # 可以重复使用相同的链环
+            arr.append(all_knots[i])
+            new_crs = int(LinkId.get_link_id_from_string(all_knots[i]).crossing_num)
+            dfs(i, cur_cross + new_crs, arr, sol, all_knots, total_crossing)
+            arr.pop()
+    
+# 计算所有组合方案（不考虑顺序）
+def get_all_combination(total_crossing:int) -> list[list[str]]:
+    all_knots = get_all_prime_under10()
+    sol = []
+    arr = []
+    last_pos =  0 # 上一个被选中的素分量，在所有素分量中的位置
+    cur_cross = 0 # 目前已经有多少个交叉点了
+    dfs(last_pos,cur_cross, arr, sol, all_knots, total_crossing)
+    return sol
+

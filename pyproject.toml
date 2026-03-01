@@ -1,6 +1,6 @@
 [project]
 name = "prime-link-knot-10"
-version = "0.0.2"
+version = "0.0.4"
 description = "table for prime link and knot under 10 crossing."
 authors = [
     {name = "GGN_2015",email = "premierbob@qq.com"}
