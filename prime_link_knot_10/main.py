@@ -1,6 +1,7 @@
 import os
 import functools
 import json
+import ast
 from link_rep import LinkId
 
 DIRNOW = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +32,7 @@ def load_pd_code() -> dict[str, list[list[int]]]:
                 continue
             lpart, rpart = line.split(":")
             lpart = lpart.strip()
-            rpart = eval(rpart)
+            rpart = ast.literal_eval(rpart)
 
             if lpart[0] != "m":
                 ans[lpart] = rpart

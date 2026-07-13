@@ -1,6 +1,6 @@
 [project]
 name = "prime-link-knot-10"
-version = "0.0.5"
+version = "0.1.0"
 description = "table for prime link and knot under 10 crossing."
 authors = [
     {name = "GGN_2015",email = "premierbob@qq.com"}
@@ -9,7 +9,7 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "link-rep"
+    "link-rep>=0.0.4"
 ]
 include = [
     {path = "prime_link_knot_10/data", format = "sdist"},

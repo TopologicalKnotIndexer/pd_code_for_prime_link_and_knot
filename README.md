@@ -1,23 +1,23 @@
-# prime_link_knot_10
-A list of pd_codes for prime knots and prime links constructed for those with ≤ 10 crossings
+# prime-link-knot-10
 
-## Install
+Provide prime knot/link PD codes, component data, mirror variants, and amphicheiral names.
+
+## Installation
 
 ```bash
-pip install prime-link-knot-10
+pip install pd-code-for-prime-link-and-knot
 ```
 
-## Usage
+## Quick start
 
-```python
-import prime_link_knot_10
+`import prime_link_knot_10` then `prime_link_knot_10.load_pd_code()`.
 
-knot_name = prime_link_knot_10.get_all_prime_under10()[15]
-pd_code   = prime_link_knot_10.load_pd_code()[knot_name]
-print(knot_name, pd_code)
-print(len(prime_link_knot_10.get_all_combination(10)))
-```
+PD codes are lists of four-entry crossings. Each arc label must occur exactly twice. Functions validate their inputs and do not mutate caller-owned PD-code lists unless explicitly documented.
 
-## TODO
+## Development
 
-- add amphicheiral link list.
+Use Python 3.10 or newer for Python packages. Build distributions with `poetry build`. Run the package's tests or examples before publishing. C++ projects require a modern standards-compliant compiler.
+
+## License
+
+MIT. See `LICENSE`.
