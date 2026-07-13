@@ -1,53 +1,81 @@
-import os
-import functools
-import json
-import ast
+"""Load and enumerate the bundled prime knot/link catalogue."""
+
+from ast import literal_eval
+from collections import Counter
+from functools import cache
+from pathlib import Path
+
 from link_rep import LinkId
 
-DIRNOW = os.path.dirname(os.path.abspath(__file__))
-DATA = os.path.join(DIRNOW, "data")
-AMPHICHEIRAL = os.path.join(DATA, "amphicheiral")
-PD_CODE = os.path.join(DATA, "pd_code")
 
-@functools.cache
+PACKAGE_DIR = Path(__file__).resolve().parent
+DATA = PACKAGE_DIR / "data"
+AMPHICHEIRAL = DATA / "amphicheiral"
+PD_CODE = DATA / "pd_code"
+
+
+def _read_nonempty_lines(folder: Path):
+    for path in sorted(folder.iterdir(), key=lambda item: item.name):
+        if not path.is_file():
+            continue
+        for line_number, raw_line in enumerate(
+            path.read_text(encoding="utf-8-sig").splitlines(), start=1
+        ):
+            line = raw_line.strip()
+            if line:
+                yield path, line_number, line
+
+
+def _validate_pd_code(name: str, pd_code: object) -> list[list[int]]:
+    if not isinstance(pd_code, list):
+        raise ValueError(f"{name} PD code is not a list")
+    normalized: list[list[int]] = []
+    for crossing in pd_code:
+        if not isinstance(crossing, (list, tuple)) or len(crossing) != 4:
+            raise ValueError(f"{name} contains a malformed crossing")
+        if any(isinstance(label, bool) or not isinstance(label, int) for label in crossing):
+            raise ValueError(f"{name} contains a non-integer label")
+        normalized.append(list(crossing))
+    counts = Counter(label for crossing in normalized for label in crossing)
+    if any(count != 2 for count in counts.values()):
+        raise ValueError(f"{name} labels do not occur exactly twice")
+    return normalized
+
+
+@cache
 def load_amphicheiral() -> set[str]:
-    arr = []
-    for filename in os.listdir(AMPHICHEIRAL):
-        filepath = os.path.join(AMPHICHEIRAL, filename)
-        for line in open(filepath, "r"):
-            line = line.strip()
-            if line == "":
-                continue
-            arr.append(line)
-    return set(arr)
+    result = set()
+    for path, line_number, name in _read_nonempty_lines(AMPHICHEIRAL):
+        try:
+            LinkId.get_link_id_from_string(name)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"invalid name at {path}:{line_number}: {name}") from exc
+        result.add(name)
+    return result
 
-@functools.cache
+
+@cache
 def load_pd_code() -> dict[str, list[list[int]]]:
-    ans = dict()
-    for filename in os.listdir(PD_CODE):
-        filepath = os.path.join(PD_CODE, filename)
-        for line in open(filepath, "r"):
-            line = line.strip()
-            if line == "":
-                continue
-            lpart, rpart = line.split(":")
-            lpart = lpart.strip()
-            rpart = ast.literal_eval(rpart)
+    result: dict[str, list[list[int]]] = {}
+    for path, line_number, line in _read_nonempty_lines(PD_CODE):
+        if ":" not in line:
+            raise ValueError(f"malformed PD record at {path}:{line_number}")
+        name, raw_pd_code = (part.strip() for part in line.split(":", 1))
+        LinkId.get_link_id_from_string(name)
+        try:
+            pd_code = _validate_pd_code(name, literal_eval(raw_pd_code))
+        except (SyntaxError, ValueError) as exc:
+            raise ValueError(f"invalid PD record at {path}:{line_number}") from exc
+        if name.startswith("m") and name[1:] in load_amphicheiral():
+            continue
+        if name in result:
+            raise ValueError(f"duplicate PD definition for {name}")
+        result[name] = pd_code
+    return result
 
-            if lpart[0] != "m":
-                ans[lpart] = rpart
 
-            else:
-                raw_name = lpart[1:]
-
-                # 跳过非手性扭结的镜像扭结
-                if raw_name not in load_amphicheiral():
-                    ans[lpart] = rpart
-    return ans
-
-# 用于获取素扭结排序依据
-@functools.cache
-def get_link_name_sort_index(link_name:str) -> tuple:
+@cache
+def get_link_name_sort_index(link_name: str) -> tuple:
     link_id = LinkId.get_link_id_from_string(link_name)
     return (
         link_id.crossing_num,
@@ -57,48 +85,45 @@ def get_link_name_sort_index(link_name:str) -> tuple:
         link_id.mirror,
     )
 
-# 用于给素扭结序列排序
-def sort_link_name_list(link_name_list: list[str]) -> list[str]:
-    return sorted([
-        link_name
-        for link_name in link_name_list
-    ], key=lambda link_name: get_link_name_sort_index(link_name))
 
-@functools.cache
+def sort_link_name_list(link_name_list: list[str]) -> list[str]:
+    return sorted(link_name_list, key=get_link_name_sort_index)
+
+
+@cache
 def get_all_prime_under10() -> list[str]:
-    return sort_link_name_list([
-        item
-        for item in load_pd_code()
-    ])
+    return sort_link_name_list(list(load_pd_code()))
+
 
 def dfs(
-    last_pos:int, 
-    cur_cross:int, 
-    arr:list[str], 
-    sol:list[list[str]], 
-    all_knots:list[str], 
-    total_crossing:int):
-
-    if cur_cross > total_crossing: # 超过限制了
+    last_pos: int,
+    cur_cross: int,
+    arr: list[str],
+    sol: list[list[str]],
+    all_knots: list[str],
+    total_crossing: int,
+):
+    if cur_cross > total_crossing:
         return
-    
-    if len(arr) != 0:
-        sol.append(json.loads(json.dumps(arr)))
-    
-    if cur_cross < total_crossing:
-        for i in range(last_pos, len(all_knots)): # 可以重复使用相同的链环
-            arr.append(all_knots[i])
-            new_crs = int(LinkId.get_link_id_from_string(all_knots[i]).crossing_num)
-            dfs(i, cur_cross + new_crs, arr, sol, all_knots, total_crossing)
-            arr.pop()
-    
-# 计算所有组合方案（不考虑顺序）
-def get_all_combination(total_crossing:int) -> list[list[str]]:
-    all_knots = get_all_prime_under10()
-    sol = []
-    arr = []
-    last_pos =  0 # 上一个被选中的素分量，在所有素分量中的位置
-    cur_cross = 0 # 目前已经有多少个交叉点了
-    dfs(last_pos,cur_cross, arr, sol, all_knots, total_crossing)
-    return sol
+    if arr:
+        sol.append(arr.copy())
+    for index in range(last_pos, len(all_knots)):
+        name = all_knots[index]
+        new_crossings = LinkId.get_link_id_from_string(name).crossing_num
+        if cur_cross + new_crossings > total_crossing:
+            break
+        arr.append(name)
+        dfs(index, cur_cross + new_crossings, arr, sol, all_knots, total_crossing)
+        arr.pop()
 
+
+def get_all_combination(total_crossing: int) -> list[list[str]]:
+    """Enumerate non-empty factor multisets within a crossing bound."""
+
+    if isinstance(total_crossing, bool) or not isinstance(total_crossing, int):
+        raise TypeError("total_crossing must be an integer")
+    if total_crossing < 0:
+        raise ValueError("total_crossing must be non-negative")
+    solutions: list[list[str]] = []
+    dfs(0, 0, [], solutions, get_all_prime_under10(), total_crossing)
+    return solutions
