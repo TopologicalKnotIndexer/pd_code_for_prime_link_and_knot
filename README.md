@@ -51,7 +51,7 @@ If you use this repository in academic work, please cite it as:
 
 ```bibtex
 @software{topologicalknotindexer_pd_code_for_prime_link_and_knot,
-  author = {{TopologicalKnotIndexer contributors}},
+  author = {{GGN\_2015}},
   title = {{pd\_code\_for\_prime\_link\_and\_knot}},
   year = {2026},
   url = {https://github.com/TopologicalKnotIndexer/pd_code_for_prime_link_and_knot}
